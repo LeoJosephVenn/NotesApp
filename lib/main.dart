@@ -1,10 +1,14 @@
+import 'dart:convert'; // For JSON decoding
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_authenticator/amplify_authenticator.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_api/amplify_api.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // For input formatters
 import 'package:my_amplify_app/models/ModelProvider.dart';
+import 'package:my_amplify_app/models/Verifiers.dart'; // Import the Verifiers model
+import 'package:my_amplify_app/models/Todo.dart'; // Import the Todo model
 import 'package:intl/intl.dart'; // For date and time formatting
 import 'package:uuid/uuid.dart'; // For generating unique IDs
 
@@ -208,6 +212,7 @@ class _TodoScreenState extends State<TodoScreen> {
       isDone: false,
       // Assuming 'createdAt' is auto-managed by Amplify; if not, uncomment the next line
       // createdAt: DateTime.now().toUtc(),
+      verified: jsonEncode([]), // Initialize with an empty list
     );
 
     final request = ModelMutations.create(newTodo);
@@ -312,6 +317,13 @@ class _TodoScreenState extends State<TodoScreen> {
                 todo.content ?? '',
                 style: const TextStyle(fontSize: 16),
               ),
+              trailing: IconButton(
+                icon: const Icon(Icons.visibility),
+                onPressed: () {
+                  _showVerifiersModal(todo);
+                },
+                tooltip: 'View Verifiers',
+              ),
               onTap: () {
                 // Optionally, handle tap events
               },
@@ -337,6 +349,438 @@ class _TodoScreenState extends State<TodoScreen> {
         );
       }
     });
+  }
+
+  /// Fetches and displays verifiers associated with a Todo in a modal.
+  Future<void> _showVerifiersModal(Todo todo) async {
+    List<Verifiers> verifiers = [];
+    List<String> verifiedIds = [];
+
+    // Parse the 'verified' JSON field to extract verifier IDs
+    if (todo.verified != null && todo.verified!.isNotEmpty) {
+      try {
+        // Assuming 'verified' is a JSON-encoded list of verifier IDs
+        verifiedIds =
+            List<String>.from(jsonDecode(todo.verified!) as List<dynamic>);
+      } catch (e) {
+        safePrint('Error parsing verified JSON: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to parse verified data.')),
+        );
+        return;
+      }
+    }
+
+    // Fetch Verifier objects
+    try {
+      final request = ModelQueries.list(Verifiers.classType);
+      final response = await Amplify.API.query(request: request).response;
+
+      if (response.hasErrors) {
+        safePrint('Errors: ${response.errors}');
+        // Handle errors appropriately in your app
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to fetch Verifiers.')),
+        );
+        return;
+      }
+
+      final allVerifiers = response.data?.items;
+      if (allVerifiers != null) {
+        verifiers = allVerifiers
+            .whereType<Verifiers>() // Filters out any nulls
+            .toList();
+      }
+    } catch (e) {
+      safePrint('Exception fetching Verifiers: $e');
+      // Handle exceptions appropriately in your app
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('An error occurred while fetching Verifiers.')),
+      );
+      return;
+    }
+
+    // Display the verifiers in a modal
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          // Use StatefulBuilder to manage state within the dialog
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Verifiers'),
+              content: verifiers.isEmpty
+                  ? const Text('No verifiers available.')
+                  : SizedBox(
+                      width: double.maxFinite,
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: verifiers.length,
+                        itemBuilder: (context, index) {
+                          final verifier = verifiers[index];
+                          bool isVerified = verifiedIds.contains(verifier.id);
+                          return ListTile(
+                            leading: const Icon(Icons.person),
+                            title: Text(verifier.name ?? 'Unnamed Verifier'),
+                            trailing: isVerified
+                                ? const Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green,
+                                  )
+                                : IconButton(
+                                    icon: const Icon(Icons.close,
+                                        color: Colors.red),
+                                    onPressed: () {
+                                      _showPasscodeDialog(todo, verifier,
+                                          (bool success) {
+                                        if (success) {
+                                          setState(() {
+                                            verifiedIds.add(verifier.id);
+                                          });
+                                        }
+                                      });
+                                    },
+                                    tooltip: 'Verify Verifier',
+                                  ),
+                          );
+                        },
+                      ),
+                    ),
+              actions: [
+                TextButton(
+                  child: const Text('Create New Verifier'),
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the current dialog
+                    _showAddVerifierDialog(
+                        todo); // Open the Add Verifier dialog
+                  },
+                ),
+                TextButton(
+                  child: const Text('Close'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Displays a dialog to add a new Verifier.
+  void _showAddVerifierDialog(Todo todo) {
+    String verifierName = '';
+    String verifierPasscode = '';
+    String? passcodeError;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          // Use StatefulBuilder to manage state within the dialog
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Add New Verifier'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      decoration: const InputDecoration(
+                        labelText: 'Name',
+                        hintText: 'Enter verifier name',
+                      ),
+                      onChanged: (value) {
+                        verifierName = value;
+                      },
+                    ),
+                    TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Passcode',
+                        hintText: 'Enter 6-digit passcode',
+                        errorText: passcodeError,
+                      ),
+                      obscureText: true,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(6),
+                      ],
+                      onChanged: (value) {
+                        verifierPasscode = value;
+                      },
+                      onSubmitted: (value) async {
+                        if (_validatePasscode(value, setState)) {
+                          Navigator.of(context).pop();
+                          await _addVerifier(
+                              todo, verifierName, verifierPasscode);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('Cancel'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                ElevatedButton(
+                  child: const Text('Save'),
+                  onPressed: () async {
+                    if (_validatePasscode(verifierPasscode, setState)) {
+                      Navigator.of(context).pop();
+                      await _addVerifier(todo, verifierName, verifierPasscode);
+                    }
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Validates that the passcode is a 6-digit integer.
+  bool _validatePasscode(
+      String passcode, void Function(void Function()) setState) {
+    if (passcode.isEmpty) {
+      setState(() {
+        // Update the error message
+        // Assuming passcodeError is defined in the calling context
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passcode cannot be empty.')),
+      );
+      return false;
+    }
+
+    if (passcode.length != 6) {
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passcode must be exactly 6 digits.')),
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Adds a new Verifier and optionally associates it with the given Todo.
+  Future<void> _addVerifier(Todo todo, String name, String passcode) async {
+    if (name.trim().isEmpty || passcode.trim().isEmpty) {
+      // Show a message to the user
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Name and passcode cannot be empty.')),
+      );
+      return;
+    }
+
+    int passcodeInt;
+    try {
+      passcodeInt = int.parse(passcode);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passcode must be a number.')),
+      );
+      return;
+    }
+
+    // Ensure passcode is exactly 6 digits
+    if (passcodeInt < 100000 || passcodeInt > 999999) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passcode must be a 6-digit number.')),
+      );
+      return;
+    }
+
+    final newVerifier = Verifiers(
+      id: uuid.v4(),
+      name: name.trim(),
+      passcode: passcodeInt,
+    );
+
+    // Create the Verifier in the API
+    final createRequest = ModelMutations.create(newVerifier);
+    final createResponse =
+        await Amplify.API.mutate(request: createRequest).response;
+
+    if (createResponse.hasErrors) {
+      safePrint('Creating Verifier failed: ${createResponse.errors}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Failed to add Verifier. Please try again.')),
+      );
+      return;
+    } else {
+      safePrint('Creating Verifier successful.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Verifier added successfully.')),
+      );
+      _refreshTodos();
+    }
+  }
+
+  /// Displays a dialog to enter passcode for verification.
+  void _showPasscodeDialog(
+      Todo todo, Verifiers verifier, Function(bool) onVerificationResult) {
+    String enteredPasscode = '';
+    bool isError = false;
+    String? passcodeError;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Enter Passcode'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  decoration: InputDecoration(
+                    hintText: '6-digit passcode',
+                    errorText: passcodeError,
+                  ),
+                  obscureText: true,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(6),
+                  ],
+                  onChanged: (value) {
+                    enteredPasscode = value;
+                  },
+                  onSubmitted: (value) {
+                    _verifyPasscode(todo, verifier, enteredPasscode, context,
+                        onVerificationResult);
+                  },
+                ),
+                if (isError)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      'Incorrect passcode. Please try again.',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+              ],
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('Cancel'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+              ElevatedButton(
+                child: const Text('Verify'),
+                onPressed: () {
+                  _verifyPasscode(todo, verifier, enteredPasscode, context,
+                      onVerificationResult);
+                },
+              ),
+            ],
+          );
+        });
+      },
+    );
+  }
+
+  /// Verifies the entered passcode against the verifier's passcode.
+  Future<void> _verifyPasscode(
+      Todo todo,
+      Verifiers verifier,
+      String enteredPasscode,
+      BuildContext dialogContext,
+      Function(bool) onVerificationResult) async {
+    if (enteredPasscode.trim().isEmpty) {
+      // Show error within the dialog
+      Navigator.of(dialogContext).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passcode cannot be empty.')),
+      );
+      return;
+    }
+
+    if (enteredPasscode.length != 6) {
+      Navigator.of(dialogContext).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passcode must be exactly 6 digits.')),
+      );
+      return;
+    }
+
+    int enteredPasscodeInt;
+    try {
+      enteredPasscodeInt = int.parse(enteredPasscode);
+    } catch (e) {
+      Navigator.of(dialogContext).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passcode must be a number.')),
+      );
+      return;
+    }
+
+    if (enteredPasscodeInt != verifier.passcode) {
+      // Incorrect passcode
+      Navigator.of(dialogContext).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Incorrect passcode. Please try again.')),
+      );
+      return;
+    }
+
+    // Correct passcode
+    // Add verifier ID to the 'verified' list
+    List<String> verifiedIds = [];
+    if (todo.verified != null && todo.verified!.isNotEmpty) {
+      try {
+        verifiedIds =
+            List<String>.from(jsonDecode(todo.verified!) as List<dynamic>);
+      } catch (e) {
+        safePrint('Error parsing verified JSON: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to parse verified data.')),
+        );
+        return;
+      }
+    }
+
+    if (!verifiedIds.contains(verifier.id)) {
+      verifiedIds.add(verifier.id);
+    }
+
+    // Update the Todo's 'verified' field
+    Todo updatedTodo = todo.copyWith(
+      verified: jsonEncode(verifiedIds),
+    );
+
+    final updateRequest = ModelMutations.update(updatedTodo);
+    final updateResponse =
+        await Amplify.API.mutate(request: updateRequest).response;
+
+    if (updateResponse.hasErrors) {
+      safePrint('Updating Todo failed: ${updateResponse.errors}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Failed to verify Verifier. Please try again.')),
+      );
+    } else {
+      safePrint('Todo updated successfully.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Verifier verified successfully.')),
+      );
+      onVerificationResult(true);
+      Navigator.of(dialogContext).pop(); // Close the passcode dialog
+      _refreshTodos(); // Refresh the Todo list to reflect changes
+    }
   }
 
   @override

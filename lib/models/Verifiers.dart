@@ -23,13 +23,12 @@ import 'ModelProvider.dart';
 import 'package:amplify_core/amplify_core.dart' as amplify_core;
 
 
-/** This is an auto generated class representing the Todo type in your schema. */
-class Todo extends amplify_core.Model {
-  static const classType = const _TodoModelType();
+/** This is an auto generated class representing the Verifiers type in your schema. */
+class Verifiers extends amplify_core.Model {
+  static const classType = const _VerifiersModelType();
   final String id;
-  final String? _content;
-  final bool? _isDone;
-  final String? _verified;
+  final String? _name;
+  final int? _passcode;
   final amplify_core.TemporalDateTime? _createdAt;
   final amplify_core.TemporalDateTime? _updatedAt;
 
@@ -40,22 +39,18 @@ class Todo extends amplify_core.Model {
   @override
   String getId() => id;
   
-  TodoModelIdentifier get modelIdentifier {
-      return TodoModelIdentifier(
+  VerifiersModelIdentifier get modelIdentifier {
+      return VerifiersModelIdentifier(
         id: id
       );
   }
   
-  String? get content {
-    return _content;
+  String? get name {
+    return _name;
   }
   
-  bool? get isDone {
-    return _isDone;
-  }
-  
-  String? get verified {
-    return _verified;
+  int? get passcode {
+    return _passcode;
   }
   
   amplify_core.TemporalDateTime? get createdAt {
@@ -66,14 +61,13 @@ class Todo extends amplify_core.Model {
     return _updatedAt;
   }
   
-  const Todo._internal({required this.id, content, isDone, verified, createdAt, updatedAt}): _content = content, _isDone = isDone, _verified = verified, _createdAt = createdAt, _updatedAt = updatedAt;
+  const Verifiers._internal({required this.id, name, passcode, createdAt, updatedAt}): _name = name, _passcode = passcode, _createdAt = createdAt, _updatedAt = updatedAt;
   
-  factory Todo({String? id, String? content, bool? isDone, String? verified}) {
-    return Todo._internal(
+  factory Verifiers({String? id, String? name, int? passcode}) {
+    return Verifiers._internal(
       id: id == null ? amplify_core.UUID.getUUID() : id,
-      content: content,
-      isDone: isDone,
-      verified: verified);
+      name: name,
+      passcode: passcode);
   }
   
   bool equals(Object other) {
@@ -83,11 +77,10 @@ class Todo extends amplify_core.Model {
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other is Todo &&
+    return other is Verifiers &&
       id == other.id &&
-      _content == other._content &&
-      _isDone == other._isDone &&
-      _verified == other._verified;
+      _name == other._name &&
+      _passcode == other._passcode;
   }
   
   @override
@@ -97,11 +90,10 @@ class Todo extends amplify_core.Model {
   String toString() {
     var buffer = new StringBuffer();
     
-    buffer.write("Todo {");
+    buffer.write("Verifiers {");
     buffer.write("id=" + "$id" + ", ");
-    buffer.write("content=" + "$_content" + ", ");
-    buffer.write("isDone=" + (_isDone != null ? _isDone!.toString() : "null") + ", ");
-    buffer.write("verified=" + "$_verified" + ", ");
+    buffer.write("name=" + "$_name" + ", ");
+    buffer.write("passcode=" + (_passcode != null ? _passcode!.toString() : "null") + ", ");
     buffer.write("createdAt=" + (_createdAt != null ? _createdAt!.format() : "null") + ", ");
     buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt!.format() : "null"));
     buffer.write("}");
@@ -109,56 +101,50 @@ class Todo extends amplify_core.Model {
     return buffer.toString();
   }
   
-  Todo copyWith({String? content, bool? isDone, String? verified}) {
-    return Todo._internal(
+  Verifiers copyWith({String? name, int? passcode}) {
+    return Verifiers._internal(
       id: id,
-      content: content ?? this.content,
-      isDone: isDone ?? this.isDone,
-      verified: verified ?? this.verified);
+      name: name ?? this.name,
+      passcode: passcode ?? this.passcode);
   }
   
-  Todo copyWithModelFieldValues({
-    ModelFieldValue<String?>? content,
-    ModelFieldValue<bool?>? isDone,
-    ModelFieldValue<String?>? verified
+  Verifiers copyWithModelFieldValues({
+    ModelFieldValue<String?>? name,
+    ModelFieldValue<int?>? passcode
   }) {
-    return Todo._internal(
+    return Verifiers._internal(
       id: id,
-      content: content == null ? this.content : content.value,
-      isDone: isDone == null ? this.isDone : isDone.value,
-      verified: verified == null ? this.verified : verified.value
+      name: name == null ? this.name : name.value,
+      passcode: passcode == null ? this.passcode : passcode.value
     );
   }
   
-  Todo.fromJson(Map<String, dynamic> json)  
+  Verifiers.fromJson(Map<String, dynamic> json)  
     : id = json['id'],
-      _content = json['content'],
-      _isDone = json['isDone'],
-      _verified = json['verified'],
+      _name = json['name'],
+      _passcode = (json['passcode'] as num?)?.toInt(),
       _createdAt = json['createdAt'] != null ? amplify_core.TemporalDateTime.fromString(json['createdAt']) : null,
       _updatedAt = json['updatedAt'] != null ? amplify_core.TemporalDateTime.fromString(json['updatedAt']) : null;
   
   Map<String, dynamic> toJson() => {
-    'id': id, 'content': _content, 'isDone': _isDone, 'verified': _verified, 'createdAt': _createdAt?.format(), 'updatedAt': _updatedAt?.format()
+    'id': id, 'name': _name, 'passcode': _passcode, 'createdAt': _createdAt?.format(), 'updatedAt': _updatedAt?.format()
   };
   
   Map<String, Object?> toMap() => {
     'id': id,
-    'content': _content,
-    'isDone': _isDone,
-    'verified': _verified,
+    'name': _name,
+    'passcode': _passcode,
     'createdAt': _createdAt,
     'updatedAt': _updatedAt
   };
 
-  static final amplify_core.QueryModelIdentifier<TodoModelIdentifier> MODEL_IDENTIFIER = amplify_core.QueryModelIdentifier<TodoModelIdentifier>();
+  static final amplify_core.QueryModelIdentifier<VerifiersModelIdentifier> MODEL_IDENTIFIER = amplify_core.QueryModelIdentifier<VerifiersModelIdentifier>();
   static final ID = amplify_core.QueryField(fieldName: "id");
-  static final CONTENT = amplify_core.QueryField(fieldName: "content");
-  static final ISDONE = amplify_core.QueryField(fieldName: "isDone");
-  static final VERIFIED = amplify_core.QueryField(fieldName: "verified");
+  static final NAME = amplify_core.QueryField(fieldName: "name");
+  static final PASSCODE = amplify_core.QueryField(fieldName: "passcode");
   static var schema = amplify_core.Model.defineSchema(define: (amplify_core.ModelSchemaDefinition modelSchemaDefinition) {
-    modelSchemaDefinition.name = "Todo";
-    modelSchemaDefinition.pluralName = "Todos";
+    modelSchemaDefinition.name = "Verifiers";
+    modelSchemaDefinition.pluralName = "Verifiers";
     
     modelSchemaDefinition.authRules = [
       amplify_core.AuthRule(
@@ -177,21 +163,15 @@ class Todo extends amplify_core.Model {
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.id());
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
-      key: Todo.CONTENT,
+      key: Verifiers.NAME,
       isRequired: false,
       ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.string)
     ));
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
-      key: Todo.ISDONE,
+      key: Verifiers.PASSCODE,
       isRequired: false,
-      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.bool)
-    ));
-    
-    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
-      key: Todo.VERIFIED,
-      isRequired: false,
-      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.string)
+      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.int)
     ));
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.nonQueryField(
@@ -210,29 +190,29 @@ class Todo extends amplify_core.Model {
   });
 }
 
-class _TodoModelType extends amplify_core.ModelType<Todo> {
-  const _TodoModelType();
+class _VerifiersModelType extends amplify_core.ModelType<Verifiers> {
+  const _VerifiersModelType();
   
   @override
-  Todo fromJson(Map<String, dynamic> jsonData) {
-    return Todo.fromJson(jsonData);
+  Verifiers fromJson(Map<String, dynamic> jsonData) {
+    return Verifiers.fromJson(jsonData);
   }
   
   @override
   String modelName() {
-    return 'Todo';
+    return 'Verifiers';
   }
 }
 
 /**
  * This is an auto generated class representing the model identifier
- * of [Todo] in your schema.
+ * of [Verifiers] in your schema.
  */
-class TodoModelIdentifier implements amplify_core.ModelIdentifier<Todo> {
+class VerifiersModelIdentifier implements amplify_core.ModelIdentifier<Verifiers> {
   final String id;
 
-  /** Create an instance of TodoModelIdentifier using [id] the primary key. */
-  const TodoModelIdentifier({
+  /** Create an instance of VerifiersModelIdentifier using [id] the primary key. */
+  const VerifiersModelIdentifier({
     required this.id});
   
   @override
@@ -250,7 +230,7 @@ class TodoModelIdentifier implements amplify_core.ModelIdentifier<Todo> {
   String serializeAsString() => serializeAsMap().values.join('#');
   
   @override
-  String toString() => 'TodoModelIdentifier(id: $id)';
+  String toString() => 'VerifiersModelIdentifier(id: $id)';
   
   @override
   bool operator ==(Object other) {
@@ -258,7 +238,7 @@ class TodoModelIdentifier implements amplify_core.ModelIdentifier<Todo> {
       return true;
     }
     
-    return other is TodoModelIdentifier &&
+    return other is VerifiersModelIdentifier &&
       id == other.id;
   }
   

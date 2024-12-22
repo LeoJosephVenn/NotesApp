@@ -49,3 +49,5 @@ node_modules
 .amplify
 amplify_outputs*
 amplifyconfiguration*
+
+/google-play-key.jks

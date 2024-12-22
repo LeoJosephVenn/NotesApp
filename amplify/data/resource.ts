@@ -11,6 +11,13 @@ const schema = a.schema({
     .model({
       content: a.string(),
       isDone: a.boolean(),
+      verified: a.json(),
+    })
+    .authorization((allow) => [allow.owner()]),
+  Verifiers: a
+    .model({
+      name: a.string(),
+      passcode: a.integer(),
     })
     .authorization((allow) => [allow.owner()]),
 });
