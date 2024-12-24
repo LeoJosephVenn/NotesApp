@@ -30,6 +30,8 @@ class Todo extends amplify_core.Model {
   final String? _content;
   final bool? _isDone;
   final String? _verified;
+  final Location? _location;
+  final String? _image;
   final amplify_core.TemporalDateTime? _createdAt;
   final amplify_core.TemporalDateTime? _updatedAt;
 
@@ -58,6 +60,14 @@ class Todo extends amplify_core.Model {
     return _verified;
   }
   
+  Location? get location {
+    return _location;
+  }
+  
+  String? get image {
+    return _image;
+  }
+  
   amplify_core.TemporalDateTime? get createdAt {
     return _createdAt;
   }
@@ -66,14 +76,16 @@ class Todo extends amplify_core.Model {
     return _updatedAt;
   }
   
-  const Todo._internal({required this.id, content, isDone, verified, createdAt, updatedAt}): _content = content, _isDone = isDone, _verified = verified, _createdAt = createdAt, _updatedAt = updatedAt;
+  const Todo._internal({required this.id, content, isDone, verified, location, image, createdAt, updatedAt}): _content = content, _isDone = isDone, _verified = verified, _location = location, _image = image, _createdAt = createdAt, _updatedAt = updatedAt;
   
-  factory Todo({String? id, String? content, bool? isDone, String? verified}) {
+  factory Todo({String? id, String? content, bool? isDone, String? verified, Location? location, String? image}) {
     return Todo._internal(
       id: id == null ? amplify_core.UUID.getUUID() : id,
       content: content,
       isDone: isDone,
-      verified: verified);
+      verified: verified,
+      location: location,
+      image: image);
   }
   
   bool equals(Object other) {
@@ -87,7 +99,9 @@ class Todo extends amplify_core.Model {
       id == other.id &&
       _content == other._content &&
       _isDone == other._isDone &&
-      _verified == other._verified;
+      _verified == other._verified &&
+      _location == other._location &&
+      _image == other._image;
   }
   
   @override
@@ -102,6 +116,8 @@ class Todo extends amplify_core.Model {
     buffer.write("content=" + "$_content" + ", ");
     buffer.write("isDone=" + (_isDone != null ? _isDone!.toString() : "null") + ", ");
     buffer.write("verified=" + "$_verified" + ", ");
+    buffer.write("location=" + (_location != null ? _location!.toString() : "null") + ", ");
+    buffer.write("image=" + "$_image" + ", ");
     buffer.write("createdAt=" + (_createdAt != null ? _createdAt!.format() : "null") + ", ");
     buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt!.format() : "null"));
     buffer.write("}");
@@ -109,24 +125,30 @@ class Todo extends amplify_core.Model {
     return buffer.toString();
   }
   
-  Todo copyWith({String? content, bool? isDone, String? verified}) {
+  Todo copyWith({String? content, bool? isDone, String? verified, Location? location, String? image}) {
     return Todo._internal(
       id: id,
       content: content ?? this.content,
       isDone: isDone ?? this.isDone,
-      verified: verified ?? this.verified);
+      verified: verified ?? this.verified,
+      location: location ?? this.location,
+      image: image ?? this.image);
   }
   
   Todo copyWithModelFieldValues({
     ModelFieldValue<String?>? content,
     ModelFieldValue<bool?>? isDone,
-    ModelFieldValue<String?>? verified
+    ModelFieldValue<String?>? verified,
+    ModelFieldValue<Location?>? location,
+    ModelFieldValue<String?>? image
   }) {
     return Todo._internal(
       id: id,
       content: content == null ? this.content : content.value,
       isDone: isDone == null ? this.isDone : isDone.value,
-      verified: verified == null ? this.verified : verified.value
+      verified: verified == null ? this.verified : verified.value,
+      location: location == null ? this.location : location.value,
+      image: image == null ? this.image : image.value
     );
   }
   
@@ -135,11 +157,17 @@ class Todo extends amplify_core.Model {
       _content = json['content'],
       _isDone = json['isDone'],
       _verified = json['verified'],
+      _location = json['location'] != null
+          ? json['location']['serializedData'] != null
+              ? Location.fromJson(new Map<String, dynamic>.from(json['location']['serializedData']))
+              : Location.fromJson(new Map<String, dynamic>.from(json['location']))
+        : null,
+      _image = json['image'],
       _createdAt = json['createdAt'] != null ? amplify_core.TemporalDateTime.fromString(json['createdAt']) : null,
       _updatedAt = json['updatedAt'] != null ? amplify_core.TemporalDateTime.fromString(json['updatedAt']) : null;
   
   Map<String, dynamic> toJson() => {
-    'id': id, 'content': _content, 'isDone': _isDone, 'verified': _verified, 'createdAt': _createdAt?.format(), 'updatedAt': _updatedAt?.format()
+    'id': id, 'content': _content, 'isDone': _isDone, 'verified': _verified, 'location': _location?.toJson(), 'image': _image, 'createdAt': _createdAt?.format(), 'updatedAt': _updatedAt?.format()
   };
   
   Map<String, Object?> toMap() => {
@@ -147,6 +175,8 @@ class Todo extends amplify_core.Model {
     'content': _content,
     'isDone': _isDone,
     'verified': _verified,
+    'location': _location,
+    'image': _image,
     'createdAt': _createdAt,
     'updatedAt': _updatedAt
   };
@@ -156,6 +186,8 @@ class Todo extends amplify_core.Model {
   static final CONTENT = amplify_core.QueryField(fieldName: "content");
   static final ISDONE = amplify_core.QueryField(fieldName: "isDone");
   static final VERIFIED = amplify_core.QueryField(fieldName: "verified");
+  static final LOCATION = amplify_core.QueryField(fieldName: "location");
+  static final IMAGE = amplify_core.QueryField(fieldName: "image");
   static var schema = amplify_core.Model.defineSchema(define: (amplify_core.ModelSchemaDefinition modelSchemaDefinition) {
     modelSchemaDefinition.name = "Todo";
     modelSchemaDefinition.pluralName = "Todos";
@@ -190,6 +222,18 @@ class Todo extends amplify_core.Model {
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
       key: Todo.VERIFIED,
+      isRequired: false,
+      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.string)
+    ));
+    
+    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.embedded(
+      fieldName: 'location',
+      isRequired: false,
+      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.embedded, ofCustomTypeName: 'Location')
+    ));
+    
+    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
+      key: Todo.IMAGE,
       isRequired: false,
       ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.string)
     ));

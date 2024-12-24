@@ -22,17 +22,19 @@
 import 'package:amplify_core/amplify_core.dart' as amplify_core;
 import 'Todo.dart';
 import 'Verifiers.dart';
+import 'Location.dart';
 
+export 'Location.dart';
 export 'Todo.dart';
 export 'Verifiers.dart';
 
 class ModelProvider implements amplify_core.ModelProviderInterface {
   @override
-  String version = "b68b8c1c508e5c0452b764a482326b7e";
+  String version = "ab946f99c7c5c64ac937c36d0354c1c7";
   @override
   List<amplify_core.ModelSchema> modelSchemas = [Todo.schema, Verifiers.schema];
   @override
-  List<amplify_core.ModelSchema> customTypeSchemas = [];
+  List<amplify_core.ModelSchema> customTypeSchemas = [Location.schema];
   static final ModelProvider _instance = ModelProvider();
 
   static ModelProvider get instance => _instance;
